@@ -19,6 +19,84 @@ const infoServicio = document.getElementById('infoServicio');
 const resumenPrecio = document.getElementById('resumenPrecio');
 const detalleReserva = document.getElementById('detalleReserva');
 
+// Elementos para validaciones
+const inputNombre = document.getElementById('nombre');
+const inputTelefono = document.getElementById('telefono');
+const inputFecha = document.getElementById('fecha');
+
+// Funciones de validación
+function validarNombre(nombre) {
+    const nombreLimpio = nombre.trim();
+    if (nombreLimpio.length < 2) {
+        return { valido: false, mensaje: 'El nombre debe tener al menos 2 caracteres' };
+    }
+    if (nombreLimpio.length > 50) {
+        return { valido: false, mensaje: 'El nombre no puede tener más de 50 caracteres' };
+    }
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nombreLimpio)) {
+        return { valido: false, mensaje: 'El nombre solo puede contener letras y espacios' };
+    }
+    return { valido: true, mensaje: '' };
+}
+
+function validarTelefono(telefono) {
+    const telefonoLimpio = telefono.replace(/\s/g, '');
+    if (!/^\d{8,15}$/.test(telefonoLimpio)) {
+        return { valido: false, mensaje: 'El teléfono debe tener entre 8 y 15 dígitos' };
+    }
+    return { valido: true, mensaje: '' };
+}
+
+function validarFecha(fecha) {
+    if (!fecha) {
+        return { valido: false, mensaje: 'Debes seleccionar una fecha' };
+    }
+    
+    const fechaSeleccionada = new Date(fecha + 'T00:00:00');
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    if (fechaSeleccionada < hoy) {
+        return { valido: false, mensaje: 'No puedes reservar en fechas pasadas' };
+    }
+    
+    // Verifico que no sea más de 3 meses en el futuro
+    const tresMesesAdelante = new Date();
+    tresMesesAdelante.setMonth(tresMesesAdelante.getMonth() + 3);
+    
+    if (fechaSeleccionada > tresMesesAdelante) {
+        return { valido: false, mensaje: 'Solo puedes reservar hasta 3 meses adelante' };
+    }
+    
+    return { valido: true, mensaje: '' };
+}
+
+function mostrarValidacion(elemento, esValido, mensaje = '') {
+    const elementoError = document.getElementById(`error${elemento.id.charAt(0).toUpperCase() + elemento.id.slice(1)}`);
+    
+    if (esValido) {
+        elemento.classList.remove('is-invalid');
+        elemento.classList.add('is-valid');
+        if (elementoError) elementoError.textContent = '';
+    } else {
+        elemento.classList.remove('is-valid');
+        elemento.classList.add('is-invalid');
+        if (elementoError) elementoError.textContent = mensaje;
+    }
+}
+
+function validarCampoEnTiempoReal(elemento, funcionValidacion) {
+    elemento.addEventListener('input', function() {
+        const resultado = funcionValidacion(this.value);
+        mostrarValidacion(this, resultado.valido, resultado.mensaje);
+    });
+    
+    elemento.addEventListener('blur', function() {
+        const resultado = funcionValidacion(this.value);
+        mostrarValidacion(this, resultado.valido, resultado.mensaje);
+    });
+}
+
 // Esta función trae los datos del archivo JSON
 async function cargarDatos() {
     try {
@@ -312,14 +390,67 @@ function mostrarReservas() {
 formulario.addEventListener('submit', function(evento) {
     evento.preventDefault();
     
+    // Valido todos los campos antes de enviar
+    let formularioValido = true;
+    
+    // Validar nombre
+    const resultadoNombre = validarNombre(inputNombre.value);
+    mostrarValidacion(inputNombre, resultadoNombre.valido, resultadoNombre.mensaje);
+    if (!resultadoNombre.valido) formularioValido = false;
+    
+    // Validar teléfono
+    const resultadoTelefono = validarTelefono(inputTelefono.value);
+    mostrarValidacion(inputTelefono, resultadoTelefono.valido, resultadoTelefono.mensaje);
+    if (!resultadoTelefono.valido) formularioValido = false;
+    
+    // Validar fecha
+    const resultadoFecha = validarFecha(inputFecha.value);
+    mostrarValidacion(inputFecha, resultadoFecha.valido, resultadoFecha.mensaje);
+    if (!resultadoFecha.valido) formularioValido = false;
+    
+    // Validar hora
+    if (!selectHora.value) {
+        mostrarValidacion(selectHora, false, 'Debes seleccionar una hora');
+        formularioValido = false;
+    } else {
+        mostrarValidacion(selectHora, true);
+    }
+    
+    // Validar barbero
+    if (!selectBarbero.value) {
+        mostrarValidacion(selectBarbero, false, 'Debes seleccionar un barbero');
+        formularioValido = false;
+    } else {
+        mostrarValidacion(selectBarbero, true);
+    }
+    
+    // Validar servicio
+    if (!selectServicio.value) {
+        mostrarValidacion(selectServicio, false, 'Debes seleccionar un servicio');
+        formularioValido = false;
+    } else {
+        mostrarValidacion(selectServicio, true);
+    }
+    
+    // Si hay errores, no envío el formulario
+    if (!formularioValido) {
+        // Scroll al primer campo con error
+        const primerError = document.querySelector('.is-invalid');
+        if (primerError) {
+            primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            primerError.focus();
+        }
+        return;
+    }
+    
     // Agarro todos los datos del form
     const datosFormulario = {
-        nombre: document.getElementById('nombre').value,
-        telefono: document.getElementById('telefono').value,
-        fecha: document.getElementById('fecha').value,
-        hora: document.getElementById('hora').value,
-        barbero: document.getElementById('barbero').value,
-        servicio: document.getElementById('servicio').value
+        nombre: inputNombre.value.trim(),
+        telefono: inputTelefono.value.replace(/\s/g, ''),
+        fecha: inputFecha.value,
+        hora: selectHora.value,
+        barbero: selectBarbero.value,
+        servicio: selectServicio.value
     };
     
     // Creo la reserva y la guardo
@@ -330,6 +461,12 @@ formulario.addEventListener('submit', function(evento) {
         
         // Limpio el formulario y reseteo la visualización
         formulario.reset();
+        
+        // Remuevo todas las clases de validación
+        document.querySelectorAll('.is-valid, .is-invalid').forEach(elemento => {
+            elemento.classList.remove('is-valid', 'is-invalid');
+        });
+        
         resumenPrecio.style.display = 'none';
         infoBarbero.innerHTML = '';
         infoServicio.innerHTML = '';
@@ -339,13 +476,20 @@ formulario.addEventListener('submit', function(evento) {
             card.classList.remove('border-primary', 'bg-light');
         });
         
+        // Formateo la fecha para mostrar
+        const fechaObj = new Date(nuevaReserva.fecha + 'T00:00:00');
+        const dia = fechaObj.getDate().toString().padStart(2, '0');
+        const mes = (fechaObj.getMonth() + 1).toString().padStart(2, '0');
+        const año = fechaObj.getFullYear();
+        const fechaFormateada = `${dia}/${mes}/${año}`;
+        
         alert(`¡Reserva confirmada! 
         
 Detalles:
 • Cliente: ${nuevaReserva.nombre}
 • Servicio: ${nuevaReserva.servicio}
 • Barbero: ${nuevaReserva.barbero}
-• Fecha: ${nuevaReserva.fecha}
+• Fecha: ${fechaFormateada}
 • Hora: ${nuevaReserva.hora}
 • Precio: $${nuevaReserva.precio}`);
     }
@@ -354,6 +498,41 @@ Detalles:
 // Agrego eventos para actualizar el resumen cuando cambian fecha/hora
 document.getElementById('fecha').addEventListener('change', actualizarResumen);
 selectHora.addEventListener('change', actualizarResumen);
+
+// Agrego validaciones en tiempo real
+inputNombre.addEventListener('input', () => validarCampoEnTiempoReal(inputNombre, validarNombre));
+inputNombre.addEventListener('blur', () => validarCampoEnTiempoReal(inputNombre, validarNombre));
+
+inputTelefono.addEventListener('input', () => validarCampoEnTiempoReal(inputTelefono, validarTelefono));
+inputTelefono.addEventListener('blur', () => validarCampoEnTiempoReal(inputTelefono, validarTelefono));
+
+inputFecha.addEventListener('change', () => validarCampoEnTiempoReal(inputFecha, validarFecha));
+inputFecha.addEventListener('blur', () => validarCampoEnTiempoReal(inputFecha, validarFecha));
+
+// Validación para selects
+selectHora.addEventListener('change', function() {
+    if (this.value) {
+        mostrarValidacion(this, true);
+    } else {
+        mostrarValidacion(this, false, 'Debes seleccionar una hora');
+    }
+});
+
+selectBarbero.addEventListener('change', function() {
+    if (this.value) {
+        mostrarValidacion(this, true);
+    } else {
+        mostrarValidacion(this, false, 'Debes seleccionar un barbero');
+    }
+});
+
+selectServicio.addEventListener('change', function() {
+    if (this.value) {
+        mostrarValidacion(this, true);
+    } else {
+        mostrarValidacion(this, false, 'Debes seleccionar un servicio');
+    }
+});
 
 // Cuando hacen click en ver reservas
 botonVerReservas.addEventListener('click', mostrarReservas);

@@ -34,11 +34,16 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label for="nombre" class="form-label">Nombre</label>
-                        <input type="text" class="form-control" id="nombre" required>
+                        <input type="text" class="form-control" id="nombre" required minlength="2" maxlength="50">
+                        <div class="invalid-feedback" id="errorNombre"></div>
+                        <div class="valid-feedback">¡Perfecto!</div>
                     </div>
                     <div class="col-md-6">
                         <label for="telefono" class="form-label">Teléfono</label>
-                        <input type="tel" class="form-control" id="telefono" required>
+                        <input type="tel" class="form-control" id="telefono" required pattern="[0-9]{8,15}" placeholder="Ej: 1123456789">
+                        <div class="invalid-feedback" id="errorTelefono"></div>
+                        <div class="valid-feedback">¡Número válido!</div>
+                        <div class="form-text">Ingresá solo números (8-15 dígitos)</div>
                     </div>
                 </div>
 
@@ -46,12 +51,17 @@
                     <div class="col-md-6">
                         <label for="fecha" class="form-label">Fecha</label>
                         <input type="date" class="form-control" id="fecha" required>
+                        <div class="invalid-feedback" id="errorFecha"></div>
+                        <div class="valid-feedback">¡Fecha válida!</div>
+                        <div class="form-text">Solo fechas futuras disponibles</div>
                     </div>
                     <div class="col-md-6">
                         <label for="hora" class="form-label">Hora</label>
                         <select class="form-select" id="hora" required>
                             <option value="">Seleccioná una hora</option>
                         </select>
+                        <div class="invalid-feedback" id="errorHora"></div>
+                        <div class="valid-feedback">¡Horario disponible!</div>
                     </div>
                 </div>
 
@@ -61,6 +71,8 @@
                         <select class="form-select" id="barbero" required>
                             <option value="">Seleccioná un barbero</option>
                         </select>
+                        <div class="invalid-feedback" id="errorBarbero"></div>
+                        <div class="valid-feedback">¡Barbero seleccionado!</div>
                         <div id="infoBarbero" class="form-text"></div>
                     </div>
                     <div class="col-md-6">
@@ -68,6 +80,8 @@
                         <select class="form-select" id="servicio" required>
                             <option value="">Seleccioná un servicio</option>
                         </select>
+                        <div class="invalid-feedback" id="errorServicio"></div>
+                        <div class="valid-feedback">¡Servicio seleccionado!</div>
                         <div id="infoServicio" class="form-text"></div>
                     </div>
                 </div>
