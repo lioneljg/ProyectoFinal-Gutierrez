@@ -11,15 +11,88 @@ const botonVerReservas = document.getElementById('verReservas');
 const listaReservas = document.getElementById('listaReservas');
 const contenidoReservas = document.getElementById('contenidoReservas');
 
+// Nuevos elementos para la visualización mejorada
+const indicadorCarga = document.getElementById('indicadorCarga');
+const contenedorServicios = document.getElementById('contenedorServicios');
+const infoBarbero = document.getElementById('infoBarbero');
+const infoServicio = document.getElementById('infoServicio');
+const resumenPrecio = document.getElementById('resumenPrecio');
+const detalleReserva = document.getElementById('detalleReserva');
+
 // Esta función trae los datos del archivo JSON
 async function cargarDatos() {
     try {
+        // Muestro el indicador de carga
+        indicadorCarga.style.display = 'block';
+        contenedorServicios.style.display = 'none';
+        
         const response = await fetch('./json/servicios.json');
         serviciosData = await response.json();
+        
+        // Simulo un pequeño delay para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
         llenarSelectores();
+        mostrarServiciosVisualmente();
+        
+        // Oculto el loading y muestro los servicios
+        indicadorCarga.style.display = 'none';
+        contenedorServicios.style.display = 'flex';
+        
     } catch (error) {
         console.error('Error cargando datos:', error);
+        indicadorCarga.innerHTML = '<p class="text-danger">Error al cargar los servicios. Intentá recargar la página.</p>';
     }
+}
+
+// Función nueva para mostrar servicios de forma visual
+function mostrarServiciosVisualmente() {
+    contenedorServicios.innerHTML = '';
+    
+    serviciosData.servicios.forEach(servicio => {
+        const tarjetaServicio = document.createElement('div');
+        tarjetaServicio.className = 'col-md-6 col-lg-4';
+        
+        tarjetaServicio.innerHTML = `
+            <div class="card h-100 servicio-card" data-servicio-id="${servicio.id}">
+                <div class="card-body">
+                    <h5 class="card-title">${servicio.nombre}</h5>
+                    <p class="card-text">${servicio.descripcion}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary fs-6">$${servicio.precio.toLocaleString()}</span>
+                        <small class="text-muted">${servicio.duracion} min</small>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Agrego evento click para seleccionar el servicio
+        tarjetaServicio.addEventListener('click', () => {
+            seleccionarServicioDesdeCard(servicio.id);
+        });
+        
+        contenedorServicios.appendChild(tarjetaServicio);
+    });
+}
+
+// Función para seleccionar servicio desde las cards
+function seleccionarServicioDesdeCard(servicioId) {
+    selectServicio.value = servicioId;
+    
+    // Remuevo selección anterior
+    document.querySelectorAll('.servicio-card').forEach(card => {
+        card.classList.remove('border-primary', 'bg-light');
+    });
+    
+    // Marco la card seleccionada
+    const cardSeleccionada = document.querySelector(`[data-servicio-id="${servicioId}"]`);
+    if (cardSeleccionada) {
+        cardSeleccionada.classList.add('border-primary', 'bg-light');
+    }
+    
+    // Actualizo la info del servicio
+    actualizarInfoServicio();
+    actualizarResumen();
 }
 
 // Lleno todos los select con la info del JSON
@@ -45,9 +118,105 @@ function llenarSelectores() {
     serviciosData.servicios.forEach(servicio => {
         const option = document.createElement('option');
         option.value = servicio.id;
-        option.textContent = `${servicio.nombre} - $${servicio.precio}`;
+        option.textContent = `${servicio.nombre} - $${servicio.precio.toLocaleString()}`;
         selectServicio.appendChild(option);
     });
+    
+    // Agrego eventos para mostrar información adicional
+    selectBarbero.addEventListener('change', actualizarInfoBarbero);
+    selectServicio.addEventListener('change', actualizarInfoServicio);
+    selectServicio.addEventListener('change', actualizarResumen);
+}
+
+// Función para mostrar info del barbero seleccionado
+function actualizarInfoBarbero() {
+    const barberoId = selectBarbero.value;
+    if (barberoId) {
+        const barbero = serviciosData.barberos.find(b => b.id === barberoId);
+        if (barbero) {
+            infoBarbero.innerHTML = `
+                <i class="bi bi-person-check"></i> 
+                <strong>${barbero.especialidad}</strong> • ${barbero.experiencia} de experiencia
+            `;
+            infoBarbero.className = 'form-text text-success';
+        }
+    } else {
+        infoBarbero.innerHTML = '';
+    }
+    actualizarResumen();
+}
+
+// Función para mostrar info del servicio seleccionado
+function actualizarInfoServicio() {
+    const servicioId = selectServicio.value;
+    if (servicioId) {
+        const servicio = serviciosData.servicios.find(s => s.id === servicioId);
+        if (servicio) {
+            infoServicio.innerHTML = `
+                <i class="bi bi-clock"></i> 
+                Duración: <strong>${servicio.duracion} minutos</strong> • 
+                Precio: <strong>$${servicio.precio.toLocaleString()}</strong>
+            `;
+            infoServicio.className = 'form-text text-primary';
+            
+            // Actualizo la selección visual en las cards
+            document.querySelectorAll('.servicio-card').forEach(card => {
+                card.classList.remove('border-primary', 'bg-light');
+            });
+            
+            const cardSeleccionada = document.querySelector(`[data-servicio-id="${servicioId}"]`);
+            if (cardSeleccionada) {
+                cardSeleccionada.classList.add('border-primary', 'bg-light');
+            }
+        }
+    } else {
+        infoServicio.innerHTML = '';
+        // Remuevo selección visual
+        document.querySelectorAll('.servicio-card').forEach(card => {
+            card.classList.remove('border-primary', 'bg-light');
+        });
+    }
+}
+
+// Función para actualizar el resumen de la reserva
+function actualizarResumen() {
+    const barberoId = selectBarbero.value;
+    const servicioId = selectServicio.value;
+    const fecha = document.getElementById('fecha').value;
+    const hora = selectHora.value;
+    
+    if (barberoId && servicioId) {
+        const barbero = serviciosData.barberos.find(b => b.id === barberoId);
+        const servicio = serviciosData.servicios.find(s => s.id === servicioId);
+        
+        let resumenHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Servicio:</strong> ${servicio.nombre}<br>
+                    <strong>Barbero:</strong> ${barbero.nombre}<br>
+                </div>
+                <div class="col-md-6">
+                    <strong>Duración:</strong> ${servicio.duracion} min<br>
+                    <strong>Precio:</strong> $${servicio.precio.toLocaleString()}
+                </div>
+            </div>
+        `;
+        
+        if (fecha && hora) {
+            const fechaFormateada = new Date(fecha).toLocaleDateString('es-AR');
+            resumenHTML += `
+                <hr>
+                <div class="text-center">
+                    <strong>📅 ${fechaFormateada} a las ${hora} hs</strong>
+                </div>
+            `;
+        }
+        
+        detalleReserva.innerHTML = resumenHTML;
+        resumenPrecio.style.display = 'block';
+    } else {
+        resumenPrecio.style.display = 'none';
+    }
 }
 
 // Armo el objeto reserva con todos los datos
@@ -120,7 +289,7 @@ function mostrarReservas() {
     }
 }
 
-// Cuando envían el formulario hago todo el proceso
+// Cuando se envía el formulario
 formulario.addEventListener('submit', function(evento) {
     evento.preventDefault();
     
@@ -136,14 +305,36 @@ formulario.addEventListener('submit', function(evento) {
     
     // Creo la reserva y la guardo
     const nuevaReserva = crearReserva(datosFormulario);
-    guardarEnStorage(nuevaReserva);
     
-    // Le aviso al usuario que salió todo bien
-    alert(`¡Reserva confirmada para ${nuevaReserva.nombre}!`);
-    
-    // Limpio el formulario para la próxima reserva
-    formulario.reset();
+    if (nuevaReserva) {
+        guardarEnStorage(nuevaReserva);
+        
+        // Limpio el formulario y reseteo la visualización
+        formulario.reset();
+        resumenPrecio.style.display = 'none';
+        infoBarbero.innerHTML = '';
+        infoServicio.innerHTML = '';
+        
+        // Remuevo selección visual de las cards
+        document.querySelectorAll('.servicio-card').forEach(card => {
+            card.classList.remove('border-primary', 'bg-light');
+        });
+        
+        alert(`¡Reserva confirmada! 
+        
+Detalles:
+• Cliente: ${nuevaReserva.nombre}
+• Servicio: ${nuevaReserva.servicio}
+• Barbero: ${nuevaReserva.barbero}
+• Fecha: ${nuevaReserva.fecha}
+• Hora: ${nuevaReserva.hora}
+• Precio: $${nuevaReserva.precio}`);
+    }
 });
+
+// Agrego eventos para actualizar el resumen cuando cambian fecha/hora
+document.getElementById('fecha').addEventListener('change', actualizarResumen);
+selectHora.addEventListener('change', actualizarResumen);
 
 // Cuando hacen click en ver reservas
 botonVerReservas.addEventListener('click', mostrarReservas);
