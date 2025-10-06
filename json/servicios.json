@@ -1,0 +1,70 @@
+{
+  "servicios": [
+    {
+      "id": "corte-clasico",
+      "nombre": "Corte Clásico",
+      "precio": 12000,
+      "duracion": 30,
+      "descripcion": "Corte tradicional con tijeras y máquina"
+    },
+    {
+      "id": "corte-moderno",
+      "nombre": "Corte Moderno",
+      "precio": 16000,
+      "duracion": 45,
+      "descripcion": "Cortes actuales y con estilo"
+    },
+    {
+      "id": "barba",
+      "nombre": "Arreglo de Barba",
+      "precio": 5000,
+      "duracion": 20,
+      "descripcion": "Recorte y perfilado de barba"
+    },
+    {
+      "id": "corte-barba",
+      "nombre": "Corte + Barba",
+      "precio": 19000,
+      "duracion": 60,
+      "descripcion": "Servicio completo de corte y barba"
+    },
+    {
+      "id": "afeitado",
+      "nombre": "Afeitado Completo",
+      "precio": 3000,
+      "duracion": 30,
+      "descripcion": "Afeitado tradicional con navaja"
+    }
+  ],
+  "barberos": [
+    {
+      "id": "carlos",
+      "nombre": "Carlos Mendoza",
+      "especialidad": "Cortes clásicos",
+      "experiencia": "10 años"
+    },
+    {
+      "id": "miguel",
+      "nombre": "Miguel Rodriguez",
+      "especialidad": "Cortes modernos",
+      "experiencia": "8 años"
+    },
+    {
+      "id": "antonio",
+      "nombre": "Antonio Silva",
+      "especialidad": "Barbería tradicional",
+      "experiencia": "15 años"
+    }
+  ],
+  "horarios": {
+    "lunes_viernes": {
+      "apertura": "09:00",
+      "cierre": "18:00"
+    },
+    "sabado": {
+      "apertura": "09:00",
+      "cierre": "16:00"
+    },
+    "domingo": "cerrado"
+  }
+}

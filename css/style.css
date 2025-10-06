@@ -1,0 +1,58 @@
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --background-color: #f8f9fa;
+    --text-color: #212529;
+}
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.formulario-reserva {
+    background: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin: 2rem 0;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.card {
+    border-left: 4px solid var(--primary-color);
+}
+
+.campo-nombre,
+.campo-apellido,
+.campo-email,
+.campo-telefono,
+.campo-fecha {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.selector-hora,
+.selector-barbero,
+.selector-servicio {
+    cursor: pointer;
+}
+
+.boton-reservar {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.boton-limpiar:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
