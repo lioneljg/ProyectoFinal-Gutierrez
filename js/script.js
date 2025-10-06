@@ -203,7 +203,13 @@ function actualizarResumen() {
         `;
         
         if (fecha && hora) {
-            const fechaFormateada = new Date(fecha).toLocaleDateString('es-AR');
+            // Formateo manual de la fecha para garantizar formato dd/mm/yyyy
+            const fechaObj = new Date(fecha + 'T00:00:00'); // Evito problemas de zona horaria
+            const dia = fechaObj.getDate().toString().padStart(2, '0');
+            const mes = (fechaObj.getMonth() + 1).toString().padStart(2, '0');
+            const año = fechaObj.getFullYear();
+            const fechaFormateada = `${dia}/${mes}/${año}`;
+            
             resumenHTML += `
                 <hr>
                 <div class="text-center">
@@ -228,12 +234,18 @@ function crearReserva(datosFormulario) {
         id: Date.now(), // uso el timestamp como ID, re simple
         nombre: datosFormulario.nombre,
         telefono: datosFormulario.telefono,
-        fecha: datosFormulario.fecha,
+        fecha: datosFormulario.fecha, // Guardo la fecha tal como viene del input (yyyy-mm-dd)
         hora: datosFormulario.hora,
         barbero: barberoSeleccionado.nombre,
         servicio: servicioSeleccionado.nombre,
         precio: servicioSeleccionado.precio,
-        fechaCreacion: new Date().toLocaleString()
+        fechaCreacion: new Date().toLocaleString('es-AR', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
     };
     
     return nuevaReserva;
@@ -260,12 +272,19 @@ function mostrarReservas() {
     } else {
         let html = '';
         reservasGuardadas.forEach(reserva => {
+            // Formateo la fecha manualmente al formato día/mes/año
+            const fecha = new Date(reserva.fecha + 'T00:00:00'); // Evito problemas de zona horaria
+            const dia = fecha.getDate().toString().padStart(2, '0');
+            const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+            const año = fecha.getFullYear();
+            const fechaFormateada = `${dia}/${mes}/${año}`;
+            
             html += `
                 <div class="card mb-2">
                     <div class="card-body">
                         <h5 class="card-title">${reserva.nombre}</h5>
                         <p class="card-text">
-                            <strong>Fecha:</strong> ${reserva.fecha} a las ${reserva.hora}<br>
+                            <strong>Fecha:</strong> ${fechaFormateada} a las ${reserva.hora}<br>
                             <strong>Barbero:</strong> ${reserva.barbero}<br>
                             <strong>Servicio:</strong> ${reserva.servicio}<br>
                             <strong>Precio:</strong> $${reserva.precio}<br>
