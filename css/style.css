@@ -62,6 +62,27 @@ h1 {
     box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
 }
 
+/* Estilos para horarios ocupados */
+.form-select option:disabled {
+    color: #dc3545 !important;
+    background-color: #f8d7da !important;
+    font-style: italic;
+}
+
+/* Información de disponibilidad */
+#infoDisponibilidad {
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+#infoDisponibilidad .text-success {
+    color: #198754 !important;
+}
+
+#infoDisponibilidad .text-danger {
+    color: #dc3545 !important;
+}
+
 /* Botones */
 .btn {
     border-radius: 10px;

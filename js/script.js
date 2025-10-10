@@ -175,15 +175,6 @@ function seleccionarServicioDesdeCard(servicioId) {
 
 // Lleno todos los select con la info del JSON
 function llenarSelectores() {
-    // Pongo los horarios disponibles
-    const horarios = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
-    horarios.forEach(hora => {
-        const option = document.createElement('option');
-        option.value = hora;
-        option.textContent = hora + ' hs';
-        selectHora.appendChild(option);
-    });
-
     // Cargo los barberos del JSON
     serviciosData.barberos.forEach(barbero => {
         const option = document.createElement('option');
@@ -202,8 +193,86 @@ function llenarSelectores() {
     
     // Agrego eventos para mostrar información adicional
     selectBarbero.addEventListener('change', actualizarInfoBarbero);
+    selectBarbero.addEventListener('change', actualizarHorariosDisponibles);
     selectServicio.addEventListener('change', actualizarInfoServicio);
     selectServicio.addEventListener('change', actualizarResumen);
+}
+
+// Función para generar horarios disponibles según el día
+function generarHorariosBase(fecha) {
+    const fechaObj = new Date(fecha + 'T00:00:00');
+    const diaSemana = fechaObj.getDay(); // 0 = domingo, 6 = sábado
+    
+    let horarios = [];
+    
+    if (diaSemana === 0) { // Domingo - cerrado
+        return [];
+    } else if (diaSemana === 6) { // Sábado - 9:00 a 16:00
+        horarios = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
+    } else { // Lunes a viernes - 9:00 a 18:00
+        horarios = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
+    }
+    
+    return horarios;
+}
+
+// Función para verificar si un horario está ocupado
+function estaHorarioOcupado(fecha, hora, barberoId) {
+    return reservasGuardadas.some(reserva => 
+        reserva.fecha === fecha && 
+        reserva.hora === hora && 
+        reserva.barberoId === barberoId
+    );
+}
+
+// Función para actualizar horarios disponibles según barbero y fecha
+function actualizarHorariosDisponibles() {
+    const barberoId = selectBarbero.value;
+    const fecha = inputFecha.value;
+    
+    // Limpio las opciones actuales
+    selectHora.innerHTML = '<option value="">Seleccioná una hora</option>';
+    
+    if (!barberoId || !fecha) {
+        return;
+    }
+    
+    const horariosBase = generarHorariosBase(fecha);
+    
+    if (horariosBase.length === 0) {
+        selectHora.innerHTML = '<option value="">Cerrado los domingos</option>';
+        selectHora.disabled = true;
+        return;
+    }
+    
+    selectHora.disabled = false;
+    let horariosDisponibles = 0;
+    
+    horariosBase.forEach(hora => {
+        const option = document.createElement('option');
+        option.value = hora;
+        
+        if (estaHorarioOcupado(fecha, hora, barberoId)) {
+            option.textContent = `${hora} hs - OCUPADO`;
+            option.disabled = true;
+            option.style.color = '#dc3545';
+        } else {
+            option.textContent = `${hora} hs - Disponible`;
+            horariosDisponibles++;
+        }
+        
+        selectHora.appendChild(option);
+    });
+    
+    // Muestro información sobre disponibilidad
+    const infoDisponibilidad = document.getElementById('infoDisponibilidad');
+    if (infoDisponibilidad) {
+        if (horariosDisponibles === 0) {
+            infoDisponibilidad.innerHTML = '<small class="text-danger">⚠️ No hay horarios disponibles para esta fecha</small>';
+        } else {
+            infoDisponibilidad.innerHTML = `<small class="text-success">✅ ${horariosDisponibles} horarios disponibles</small>`;
+        }
+    }
 }
 
 // Función para mostrar info del barbero seleccionado
@@ -315,6 +384,7 @@ function crearReserva(datosFormulario) {
         fecha: datosFormulario.fecha, // Guardo la fecha tal como viene del input (yyyy-mm-dd)
         hora: datosFormulario.hora,
         barbero: barberoSeleccionado.nombre,
+        barberoId: barberoSeleccionado.id, // Agrego el ID del barbero para verificar disponibilidad
         servicio: servicioSeleccionado.nombre,
         precio: servicioSeleccionado.precio,
         fechaCreacion: new Date().toLocaleString('es-AR', {
@@ -443,6 +513,14 @@ formulario.addEventListener('submit', function(evento) {
         return;
     }
     
+    // Verifico disponibilidad del horario antes de crear la reserva
+    if (estaHorarioOcupado(inputFecha.value, selectHora.value, selectBarbero.value)) {
+        mostrarValidacion(selectHora, false, 'Este horario ya no está disponible');
+        alert('⚠️ Lo sentimos, este horario acaba de ser reservado por otro cliente. Por favor, seleccioná otro horario.');
+        actualizarHorariosDisponibles(); // Actualizo la lista de horarios
+        return;
+    }
+    
     // Agarro todos los datos del form
     const datosFormulario = {
         nombre: inputNombre.value.trim(),
@@ -492,11 +570,15 @@ Detalles:
 • Fecha: ${fechaFormateada}
 • Hora: ${nuevaReserva.hora}
 • Precio: $${nuevaReserva.precio}`);
+        
+        // Actualizo los horarios disponibles después de guardar la reserva
+        actualizarHorariosDisponibles();
     }
 });
 
 // Agrego eventos para actualizar el resumen cuando cambian fecha/hora
 document.getElementById('fecha').addEventListener('change', actualizarResumen);
+document.getElementById('fecha').addEventListener('change', actualizarHorariosDisponibles);
 selectHora.addEventListener('change', actualizarResumen);
 
 // Agrego validaciones en tiempo real
