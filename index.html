@@ -5,10 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador de reservas</title>
+    <!-- Google Fonts - Inter para mejor tipografía -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/style.css">
     <script src="./js/script.js" defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <!-- SweetAlert2 para notificaciones modernas -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -40,12 +46,16 @@
                     </div>
                     <div class="col-md-6">
                         <label for="telefono" class="form-label">Teléfono</label>
-                        <input type="tel" class="form-control" id="telefono" required pattern="[0-9]{8,15}" placeholder="Ej: 1123456789">
+                        <input type="tel" class="form-control" id="telefono" placeholder="+54 9 11 1234-5678" required>
                         <div class="invalid-feedback" id="errorTelefono"></div>
                         <div class="valid-feedback">¡Número válido!</div>
                         <div class="form-text">Ingresá solo números (8-15 dígitos)</div>
                     </div>
                 </div>
+
+                <!-- Información del cliente y sugerencias -->
+                <div id="infoCliente" style="display: none;"></div>
+                <div id="sugerenciasInteligentes" style="display: none;"></div>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
@@ -56,18 +66,6 @@
                         <div class="form-text">Solo fechas futuras disponibles</div>
                     </div>
                     <div class="col-md-6">
-                        <label for="hora" class="form-label">Hora</label>
-                        <select class="form-select" id="hora" required>
-                            <option value="">Seleccioná una hora</option>
-                        </select>
-                        <div class="invalid-feedback" id="errorHora"></div>
-                        <div class="valid-feedback">¡Horario disponible!</div>
-                        <div id="infoDisponibilidad" class="form-text"></div>
-                    </div>
-                </div>
-
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
                         <label for="barbero" class="form-label">Barbero</label>
                         <select class="form-select" id="barbero" required>
                             <option value="">Seleccioná un barbero</option>
@@ -75,6 +73,18 @@
                         <div class="invalid-feedback" id="errorBarbero"></div>
                         <div class="valid-feedback">¡Barbero seleccionado!</div>
                         <div id="infoBarbero" class="form-text"></div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="hora" class="form-label">Hora</label>
+                        <select class="form-select" id="hora" required>
+                            <option value="">Seleccioná una hora</option>
+                        </select>
+                        <div class="invalid-feedback" id="errorHora"></div>
+                        <div class="valid-feedback">¡Horario disponible!</div>
+                        <div id="infoDisponibilidad" class="form-text"></div>
                     </div>
                     <div class="col-md-6">
                         <label for="servicio" class="form-label">Servicio</label>

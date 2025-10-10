@@ -24,9 +24,13 @@ const inputNombre = document.getElementById('nombre');
 const inputTelefono = document.getElementById('telefono');
 const inputFecha = document.getElementById('fecha');
 
-// Funciones de validación
+// Funciones de validación mejoradas
 function validarNombre(nombre) {
     const nombreLimpio = nombre.trim();
+    
+    if (nombreLimpio.length === 0) {
+        return { valido: false, mensaje: 'El nombre es obligatorio' };
+    }
     if (nombreLimpio.length < 2) {
         return { valido: false, mensaje: 'El nombre debe tener al menos 2 caracteres' };
     }
@@ -36,15 +40,63 @@ function validarNombre(nombre) {
     if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nombreLimpio)) {
         return { valido: false, mensaje: 'El nombre solo puede contener letras y espacios' };
     }
-    return { valido: true, mensaje: '' };
+    if (/^\s+|\s+$/.test(nombre)) {
+        return { valido: false, mensaje: 'El nombre no puede empezar o terminar con espacios' };
+    }
+    if (/\s{2,}/.test(nombreLimpio)) {
+        return { valido: false, mensaje: 'El nombre no puede tener espacios dobles' };
+    }
+    
+    return { valido: true, mensaje: '¡Nombre válido!' };
 }
 
 function validarTelefono(telefono) {
-    const telefonoLimpio = telefono.replace(/\s/g, '');
-    if (!/^\d{8,15}$/.test(telefonoLimpio)) {
-        return { valido: false, mensaje: 'El teléfono debe tener entre 8 y 15 dígitos' };
+    if (!telefono || telefono.trim() === '') {
+        return { valido: false, mensaje: 'El teléfono es obligatorio' };
     }
-    return { valido: true, mensaje: '' };
+    
+    // Extraigo solo los números
+    const numeroLimpio = telefono.replace(/\D/g, '');
+    
+    // Verifico que tenga el formato argentino básico
+    if (numeroLimpio.length < 10) {
+        return { valido: false, mensaje: 'Ingresá solo números (8-15 dígitos)' };
+    }
+    
+    // Remuevo el código de país si está presente
+    let numeroSinPais = numeroLimpio;
+    if (numeroSinPais.startsWith('54')) {
+        numeroSinPais = numeroSinPais.substring(2);
+    }
+    
+    // Verifico que empiece con 9 (celular argentino)
+    if (!numeroSinPais.startsWith('9')) {
+        return { valido: false, mensaje: 'Código de área no válido para Argentina' };
+    }
+    
+    // Verifico la longitud del número sin el 9
+    const numeroSin9 = numeroSinPais.substring(1);
+    if (numeroSin9.length < 8 || numeroSin9.length > 10) {
+        return { valido: false, mensaje: 'Ingresá solo números (8-15 dígitos)' };
+    }
+    
+    // Verifico códigos de área válidos argentinos (después del 9)
+    const codigoArea = numeroSin9.substring(0, 2);
+    const areasValidas = ['11', '22', '23', '26', '29', '34', '35', '37', '38'];
+    
+    if (!areasValidas.includes(codigoArea)) {
+        // Para números de 8 dígitos, el código de área puede ser de 3 dígitos
+        const codigoArea3 = numeroSin9.substring(0, 3);
+        const areas3Digitos = ['221', '223', '230', '236', '237', '249', '260', '261', '263', '264', '266', '280', '291', '294', '297', '298', '299', '341', '342', '343', '351', '353', '358', '362', '364', '370', '376', '379', '380', '381', '383', '385', '387', '388'];
+        
+        if (numeroSin9.length === 8 && !areas3Digitos.includes(codigoArea3)) {
+            return { valido: false, mensaje: 'Código de área no válido para Argentina' };
+        } else if (numeroSin9.length > 8 && !areasValidas.includes(codigoArea)) {
+            return { valido: false, mensaje: 'Código de área no válido para Argentina' };
+        }
+    }
+    
+    return { valido: true, mensaje: '¡Perfecto!' };
 }
 
 function validarFecha(fecha) {
@@ -65,10 +117,38 @@ function validarFecha(fecha) {
     tresMesesAdelante.setMonth(tresMesesAdelante.getMonth() + 3);
     
     if (fechaSeleccionada > tresMesesAdelante) {
-        return { valido: false, mensaje: 'Solo puedes reservar hasta 3 meses adelante' };
+        const fechaLimite = tresMesesAdelante.toLocaleDateString('es-AR');
+        return { valido: false, mensaje: `Solo puedes reservar hasta el ${fechaLimite}` };
     }
     
-    return { valido: true, mensaje: '' };
+    // Verifico si es domingo (día cerrado)
+    const diaSemana = fechaSeleccionada.getDay();
+    if (diaSemana === 0) {
+        return { valido: false, mensaje: 'Los domingos estamos cerrados' };
+    }
+    
+    return { valido: true, mensaje: '¡Fecha disponible!' };
+}
+
+function validarHora(hora) {
+    if (!hora) {
+        return { valido: false, mensaje: 'Debes seleccionar una hora' };
+    }
+    return { valido: true, mensaje: '¡Hora seleccionada!' };
+}
+
+function validarBarbero(barberoId) {
+    if (!barberoId) {
+        return { valido: false, mensaje: 'Debes seleccionar un barbero' };
+    }
+    return { valido: true, mensaje: '¡Barbero seleccionado!' };
+}
+
+function validarServicio(servicioId) {
+    if (!servicioId) {
+        return { valido: false, mensaje: 'Debes seleccionar un servicio' };
+    }
+    return { valido: true, mensaje: '¡Servicio seleccionado!' };
 }
 
 function mostrarValidacion(elemento, esValido, mensaje = '') {
@@ -479,28 +559,19 @@ formulario.addEventListener('submit', function(evento) {
     if (!resultadoFecha.valido) formularioValido = false;
     
     // Validar hora
-    if (!selectHora.value) {
-        mostrarValidacion(selectHora, false, 'Debes seleccionar una hora');
-        formularioValido = false;
-    } else {
-        mostrarValidacion(selectHora, true);
-    }
+    const resultadoHora = validarHora(selectHora.value);
+    mostrarValidacion(selectHora, resultadoHora.valido, resultadoHora.mensaje);
+    if (!resultadoHora.valido) formularioValido = false;
     
     // Validar barbero
-    if (!selectBarbero.value) {
-        mostrarValidacion(selectBarbero, false, 'Debes seleccionar un barbero');
-        formularioValido = false;
-    } else {
-        mostrarValidacion(selectBarbero, true);
-    }
+    const resultadoBarbero = validarBarbero(selectBarbero.value);
+    mostrarValidacion(selectBarbero, resultadoBarbero.valido, resultadoBarbero.mensaje);
+    if (!resultadoBarbero.valido) formularioValido = false;
     
     // Validar servicio
-    if (!selectServicio.value) {
-        mostrarValidacion(selectServicio, false, 'Debes seleccionar un servicio');
-        formularioValido = false;
-    } else {
-        mostrarValidacion(selectServicio, true);
-    }
+    const resultadoServicio = validarServicio(selectServicio.value);
+    mostrarValidacion(selectServicio, resultadoServicio.valido, resultadoServicio.mensaje);
+    if (!resultadoServicio.valido) formularioValido = false;
     
     // Si hay errores, no envío el formulario
     if (!formularioValido) {
@@ -516,7 +587,16 @@ formulario.addEventListener('submit', function(evento) {
     // Verifico disponibilidad del horario antes de crear la reserva
     if (estaHorarioOcupado(inputFecha.value, selectHora.value, selectBarbero.value)) {
         mostrarValidacion(selectHora, false, 'Este horario ya no está disponible');
-        alert('⚠️ Lo sentimos, este horario acaba de ser reservado por otro cliente. Por favor, seleccioná otro horario.');
+        
+        // Notificación moderna con SweetAlert2
+        Swal.fire({
+            icon: 'warning',
+            title: '⚠️ Horario no disponible',
+            text: 'Lo sentimos, este horario acaba de ser reservado por otro cliente. Por favor, seleccioná otro horario.',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#0d6efd'
+        });
+        
         actualizarHorariosDisponibles(); // Actualizo la lista de horarios
         return;
     }
@@ -561,15 +641,27 @@ formulario.addEventListener('submit', function(evento) {
         const año = fechaObj.getFullYear();
         const fechaFormateada = `${dia}/${mes}/${año}`;
         
-        alert(`¡Reserva confirmada! 
-        
-Detalles:
-• Cliente: ${nuevaReserva.nombre}
-• Servicio: ${nuevaReserva.servicio}
-• Barbero: ${nuevaReserva.barbero}
-• Fecha: ${fechaFormateada}
-• Hora: ${nuevaReserva.hora}
-• Precio: $${nuevaReserva.precio}`);
+        // Notificación de éxito moderna con SweetAlert2
+        Swal.fire({
+            icon: 'success',
+            title: '🎉 ¡Reserva confirmada!',
+            html: `
+                <div class="text-start">
+                    <p><strong>📋 Detalles de tu reserva:</strong></p>
+                    <ul class="list-unstyled">
+                        <li>👤 <strong>Cliente:</strong> ${nuevaReserva.nombre}</li>
+                        <li>✂️ <strong>Servicio:</strong> ${nuevaReserva.servicio}</li>
+                        <li>💼 <strong>Barbero:</strong> ${nuevaReserva.barbero}</li>
+                        <li>📅 <strong>Fecha:</strong> ${fechaFormateada}</li>
+                        <li>🕐 <strong>Hora:</strong> ${nuevaReserva.hora}</li>
+                        <li>💰 <strong>Precio:</strong> $${nuevaReserva.precio.toLocaleString()}</li>
+                    </ul>
+                </div>
+            `,
+            confirmButtonText: '¡Perfecto!',
+            confirmButtonColor: '#198754',
+            width: '500px'
+        });
         
         // Actualizo los horarios disponibles después de guardar la reserva
         actualizarHorariosDisponibles();
@@ -585,35 +677,70 @@ selectHora.addEventListener('change', actualizarResumen);
 inputNombre.addEventListener('input', () => validarCampoEnTiempoReal(inputNombre, validarNombre));
 inputNombre.addEventListener('blur', () => validarCampoEnTiempoReal(inputNombre, validarNombre));
 
-inputTelefono.addEventListener('input', () => validarCampoEnTiempoReal(inputTelefono, validarTelefono));
-inputTelefono.addEventListener('blur', () => validarCampoEnTiempoReal(inputTelefono, validarTelefono));
+// Event listeners mejorados para el teléfono con formato argentino
+inputTelefono.addEventListener('input', function() {
+    const valorAnterior = this.value;
+    const posicionAnterior = this.selectionStart;
+    
+    // Formateo automático del teléfono argentino
+    const telefonoFormateado = formatearTelefonoArgentino(this.value);
+    
+    // Solo actualizo el valor si es diferente
+    if (this.value !== telefonoFormateado) {
+        this.value = telefonoFormateado;
+        
+        // Calculo y ajusto la posición del cursor usando la función mejorada
+        const nuevaPosicion = calcularPosicionCursor(valorAnterior, telefonoFormateado, posicionAnterior);
+        
+        // Uso setTimeout para asegurar que el cursor se posicione correctamente
+        setTimeout(() => {
+            this.setSelectionRange(nuevaPosicion, nuevaPosicion);
+        }, 0);
+    }
+    
+    // Valido el teléfono
+    const resultado = validarTelefono(this.value);
+    mostrarValidacion(this, resultado.valido, resultado.mensaje);
+});
+
+inputTelefono.addEventListener('blur', function() {
+    const telefonoLimpio = this.value.replace(/\D/g, '');
+    
+    // Valido el teléfono
+    const resultado = validarTelefono(this.value);
+    mostrarValidacion(this, resultado.valido, resultado.mensaje);
+    
+    // Si el teléfono es válido, busco datos del cliente
+    if (resultado.valido && telefonoLimpio.length >= 8) {
+        const datosCliente = obtenerHistorialCliente(telefonoLimpio);
+        precargarDatosCliente(datosCliente);
+    } else {
+        // Limpio la información si el teléfono no es válido
+        const infoCliente = document.getElementById('infoCliente');
+        if (infoCliente) {
+            infoCliente.style.display = 'none';
+        }
+        limpiarSugerencias();
+    }
+});
 
 inputFecha.addEventListener('change', () => validarCampoEnTiempoReal(inputFecha, validarFecha));
 inputFecha.addEventListener('blur', () => validarCampoEnTiempoReal(inputFecha, validarFecha));
 
-// Validación para selects
+// Validación para selects con validaciones mejoradas
 selectHora.addEventListener('change', function() {
-    if (this.value) {
-        mostrarValidacion(this, true);
-    } else {
-        mostrarValidacion(this, false, 'Debes seleccionar una hora');
-    }
+    const resultado = validarHora(this.value);
+    mostrarValidacion(this, resultado.valido, resultado.mensaje);
 });
 
 selectBarbero.addEventListener('change', function() {
-    if (this.value) {
-        mostrarValidacion(this, true);
-    } else {
-        mostrarValidacion(this, false, 'Debes seleccionar un barbero');
-    }
+    const resultado = validarBarbero(this.value);
+    mostrarValidacion(this, resultado.valido, resultado.mensaje);
 });
 
 selectServicio.addEventListener('change', function() {
-    if (this.value) {
-        mostrarValidacion(this, true);
-    } else {
-        mostrarValidacion(this, false, 'Debes seleccionar un servicio');
-    }
+    const resultado = validarServicio(this.value);
+    mostrarValidacion(this, resultado.valido, resultado.mensaje);
 });
 
 // Cuando hacen click en ver reservas
@@ -623,4 +750,376 @@ botonVerReservas.addEventListener('click', mostrarReservas);
 document.addEventListener('DOMContentLoaded', function() {
     cargarDatos();
     cargarDesdeStorage();
+    inicializarSistemaClienteInteligente();
 });
+
+
+// Nuevas funciones para manejo de datos del cliente
+function obtenerHistorialCliente(telefono) {
+    // Busco en las reservas guardadas si ya existe este teléfono
+    const reservasCliente = reservasGuardadas.filter(reserva => 
+        reserva.telefono.replace(/\s/g, '') === telefono.replace(/\s/g, '')
+    );
+    
+    if (reservasCliente.length > 0) {
+        // Obtengo la reserva más reciente
+        const reservaReciente = reservasCliente.sort((a, b) => b.id - a.id)[0];
+        return {
+            existe: true,
+            nombre: reservaReciente.nombre,
+            telefono: reservaReciente.telefono,
+            totalReservas: reservasCliente.length,
+            ultimaReserva: reservaReciente.fechaCreacion,
+            servicioFavorito: obtenerServicioMasFrecuente(reservasCliente),
+            barberoFavorito: obtenerBarberoMasFrecuente(reservasCliente)
+        };
+    }
+    
+    return { existe: false };
+}
+
+function obtenerServicioMasFrecuente(reservasCliente) {
+    const servicios = {};
+    reservasCliente.forEach(reserva => {
+        servicios[reserva.servicio] = (servicios[reserva.servicio] || 0) + 1;
+    });
+    
+    return Object.keys(servicios).reduce((a, b) => 
+        servicios[a] > servicios[b] ? a : b
+    );
+}
+
+function obtenerBarberoMasFrecuente(reservasCliente) {
+    const barberos = {};
+    reservasCliente.forEach(reserva => {
+        barberos[reserva.barbero] = (barberos[reserva.barbero] || 0) + 1;
+    });
+    
+    return Object.keys(barberos).reduce((a, b) => 
+        barberos[a] > barberos[b] ? a : b
+    );
+}
+
+function precargarDatosCliente(datosCliente) {
+    if (datosCliente.existe) {
+        // Precargo el nombre
+        inputNombre.value = datosCliente.nombre;
+        mostrarValidacion(inputNombre, true);
+        
+        // Muestro información del cliente (básica o avanzada según el historial)
+        if (datosCliente.totalReservas >= 3) {
+            mostrarEstadisticasAvanzadas(datosCliente);
+        } else {
+            const infoCliente = document.getElementById('infoCliente');
+            if (infoCliente) {
+                infoCliente.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-person-check"></i> 
+                        <strong>Cliente frecuente</strong> - ${datosCliente.totalReservas} reserva(s) anterior(es)
+                        <br><small>Última visita: ${datosCliente.ultimaReserva}</small>
+                    </div>
+                `;
+                infoCliente.style.display = 'block';
+            }
+        }
+        
+        // Sugiero servicio y barbero favoritos
+        mostrarSugerenciasInteligentes(datosCliente);
+    } else {
+        // Limpio la información si no es cliente conocido
+        const infoCliente = document.getElementById('infoCliente');
+        if (infoCliente) {
+            infoCliente.style.display = 'none';
+        }
+        limpiarSugerencias();
+    }
+}
+
+function mostrarSugerenciasInteligentes(datosCliente) {
+    const sugerenciasDiv = document.getElementById('sugerenciasInteligentes');
+    if (sugerenciasDiv) {
+        sugerenciasDiv.innerHTML = `
+            <div class="alert alert-success">
+                <h6><i class="bi bi-lightbulb"></i> Sugerencias basadas en tu historial:</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Servicio favorito:</strong> ${datosCliente.servicioFavorito}
+                        <button type="button" class="btn btn-sm btn-outline-success ms-2" 
+                                onclick="aplicarSugerenciaServicio('${datosCliente.servicioFavorito}')">
+                            Aplicar
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Barbero favorito:</strong> ${datosCliente.barberoFavorito}
+                        <button type="button" class="btn btn-sm btn-outline-success ms-2" 
+                                onclick="aplicarSugerenciaBarbero('${datosCliente.barberoFavorito}')">
+                            Aplicar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        sugerenciasDiv.style.display = 'block';
+    }
+}
+
+function aplicarSugerenciaServicio(nombreServicio) {
+    const servicio = serviciosData.servicios.find(s => s.nombre === nombreServicio);
+    if (servicio) {
+        selectServicio.value = servicio.id;
+        selectServicio.dispatchEvent(new Event('change'));
+        mostrarValidacion(selectServicio, true);
+    }
+}
+
+function aplicarSugerenciaBarbero(nombreBarbero) {
+    const barbero = serviciosData.barberos.find(b => b.nombre === nombreBarbero);
+    if (barbero) {
+        selectBarbero.value = barbero.id;
+        selectBarbero.dispatchEvent(new Event('change'));
+        mostrarValidacion(selectBarbero, true);
+    }
+}
+
+function limpiarSugerencias() {
+    const sugerenciasDiv = document.getElementById('sugerenciasInteligentes');
+    if (sugerenciasDiv) {
+        sugerenciasDiv.style.display = 'none';
+    }
+}
+
+function formatearTelefonoArgentino(input) {
+    // Extraigo solo los números del input
+    let numeros = input.replace(/\D/g, '');
+    
+    // Si está vacío, retorno el prefijo base
+    if (numeros.length === 0) {
+        return '+54 9 ';
+    }
+    
+    // Remuevo el código de país si alguien lo escribió
+    if (numeros.startsWith('54')) {
+        numeros = numeros.substring(2);
+    }
+    
+    // Si no empieza con 9, lo agrego automáticamente
+    if (!numeros.startsWith('9')) {
+        numeros = '9' + numeros;
+    }
+    
+    // Limito a 11 dígitos (9 + 10 dígitos del número)
+    if (numeros.length > 11) {
+        numeros = numeros.substring(0, 11);
+    }
+    
+    // Formato simple sin paréntesis: +54 9 11 1234-5678
+    let resultado = '+54 9 ';
+    
+    if (numeros.length > 1) {
+        // Agrego el código de área sin paréntesis
+        const codigoArea = numeros.substring(1, 3);
+        if (codigoArea.length > 0) {
+            resultado += codigoArea;
+            if (codigoArea.length === 2) {
+                resultado += ' ';
+            }
+        }
+        
+        // Agrego el número
+        if (numeros.length > 3) {
+            const numero = numeros.substring(3);
+            if (numero.length <= 4) {
+                resultado += numero;
+            } else {
+                resultado += numero.substring(0, 4) + '-' + numero.substring(4);
+            }
+        }
+    }
+    
+    return resultado;
+}
+
+function calcularPosicionCursor(valorAnterior, valorNuevo, posicionAnterior) {
+    // Para una experiencia más natural, simplemente mantengo el cursor al final
+    // cuando se está escribiendo de forma continua
+    if (valorNuevo.length >= valorAnterior.length) {
+        // Si se está agregando contenido, pongo el cursor al final
+        return valorNuevo.length;
+    }
+    
+    // Si se está borrando, mantengo una posición relativa
+    const diferencia = valorAnterior.length - valorNuevo.length;
+    let nuevaPosicion = Math.max(0, posicionAnterior - diferencia);
+    
+    // Me aseguro de que no esté en un carácter de formato
+    const caracteresFormato = ['+', '5', '4', ' ', '9', '-'];
+    while (nuevaPosicion < valorNuevo.length && 
+           caracteresFormato.includes(valorNuevo[nuevaPosicion])) {
+        nuevaPosicion++;
+    }
+    
+    return Math.min(nuevaPosicion, valorNuevo.length);
+}
+
+
+function limpiarFormularioCompleto() {
+    // Limpio el formulario y reseteo la visualización
+    formulario.reset();
+    
+    // Remuevo todas las clases de validación
+    document.querySelectorAll('.is-valid, .is-invalid').forEach(elemento => {
+        elemento.classList.remove('is-valid', 'is-invalid');
+    });
+    
+    resumenPrecio.style.display = 'none';
+    infoBarbero.innerHTML = '';
+    infoServicio.innerHTML = '';
+    
+    // Remuevo selección visual de las cards
+    document.querySelectorAll('.servicio-card').forEach(card => {
+        card.classList.remove('border-primary', 'bg-light');
+    });
+    
+    // Limpio información del cliente y sugerencias
+    const infoCliente = document.getElementById('infoCliente');
+    if (infoCliente) {
+        infoCliente.style.display = 'none';
+    }
+    limpiarSugerencias();
+}
+
+function obtenerEstadisticasCliente(telefono) {
+    const telefonoLimpio = telefono.replace(/\D/g, '');
+    const reservasCliente = reservasGuardadas.filter(reserva => 
+        reserva.telefono.replace(/\D/g, '') === telefonoLimpio
+    );
+    
+    if (reservasCliente.length === 0) {
+        return null;
+    }
+    
+    // Calculo estadísticas
+    const totalGastado = reservasCliente.reduce((total, reserva) => total + reserva.precio, 0);
+    const serviciosUnicos = [...new Set(reservasCliente.map(r => r.servicio))];
+    const barberosUnicos = [...new Set(reservasCliente.map(r => r.barbero))];
+    
+    // Encuentro el mes con más reservas
+    const reservasPorMes = {};
+    reservasCliente.forEach(reserva => {
+        const fecha = new Date(reserva.fecha + 'T00:00:00');
+        const mesAño = `${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
+        reservasPorMes[mesAño] = (reservasPorMes[mesAño] || 0) + 1;
+    });
+    
+    const mesFavorito = Object.keys(reservasPorMes).reduce((a, b) => 
+        reservasPorMes[a] > reservasPorMes[b] ? a : b
+    );
+    
+    return {
+        totalReservas: reservasCliente.length,
+        totalGastado,
+        serviciosUnicos: serviciosUnicos.length,
+        barberosUnicos: barberosUnicos.length,
+        mesFavorito,
+        reservasEnMesFavorito: reservasPorMes[mesFavorito]
+    };
+}
+
+function mostrarEstadisticasAvanzadas(datosCliente) {
+    const estadisticas = obtenerEstadisticasCliente(datosCliente.telefono);
+    
+    if (estadisticas && estadisticas.totalReservas >= 3) {
+        const infoCliente = document.getElementById('infoCliente');
+        if (infoCliente) {
+            infoCliente.innerHTML = `
+                <div class="alert alert-info">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <i class="bi bi-person-check"></i> 
+                            <strong>Cliente VIP</strong> - ${estadisticas.totalReservas} reservas
+                            <br><small>Última visita: ${datosCliente.ultimaReserva}</small>
+                            <br><small>Total gastado: $${estadisticas.totalGastado.toLocaleString()}</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="badge bg-primary">
+                                ${estadisticas.serviciosUnicos} servicios probados
+                            </div>
+                            <br>
+                            <div class="badge bg-success mt-1">
+                                Mes favorito: ${estadisticas.mesFavorito}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+
+
+function mostrarIndicadorClienteGuardado() {
+    // Agrego un indicador visual cuando se guarda un cliente nuevo
+    const inputTelefono = document.getElementById('telefono');
+    if (inputTelefono) {
+        inputTelefono.classList.add('cliente-nuevo-guardado');
+        
+        // Remuevo el indicador después de 3 segundos
+        setTimeout(() => {
+            inputTelefono.classList.remove('cliente-nuevo-guardado');
+        }, 3000);
+    }
+}
+
+function aplicarFormatoAutomaticoNombre() {
+    const inputNombre = document.getElementById('nombre');
+    if (inputNombre && inputNombre.value) {
+        // Capitalizo la primera letra de cada palabra
+        const nombreFormateado = inputNombre.value
+            .toLowerCase()
+            .split(' ')
+            .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1))
+            .join(' ')
+            .replace(/\s+/g, ' ') // Remuevo espacios dobles
+            .trim();
+        
+        if (nombreFormateado !== inputNombre.value) {
+            inputNombre.value = nombreFormateado;
+        }
+    }
+}
+
+function limpiarYValidarCamposEnTiempoReal() {
+    // Formateo automático del nombre
+    inputNombre.addEventListener('blur', aplicarFormatoAutomaticoNombre);
+    
+    // Limpieza automática de caracteres especiales en nombre
+    inputNombre.addEventListener('input', function() {
+        // Remuevo números y caracteres especiales, excepto espacios, acentos y ñ
+        this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+    });
+    
+    // Prevención de espacios múltiples en tiempo real
+    inputNombre.addEventListener('input', function() {
+        // Reemplazo múltiples espacios con uno solo
+        this.value = this.value.replace(/\s{2,}/g, ' ');
+    });
+}
+
+function inicializarSistemaClienteInteligente() {
+    // Inicializo todas las funcionalidades del sistema de cliente inteligente
+    limpiarYValidarCamposEnTiempoReal();
+    
+    // Agrego evento para mostrar indicador cuando se crea una nueva reserva
+    const originalCrearReserva = crearReserva;
+    window.crearReserva = function(datosReserva) {
+        const resultado = originalCrearReserva(datosReserva);
+        
+        // Si es un cliente nuevo, muestro el indicador
+        const historialExistente = obtenerHistorialCliente(datosReserva.telefono);
+        if (!historialExistente.existe) {
+            mostrarIndicadorClienteGuardado();
+        }
+        
+        return resultado;
+    };
+}
