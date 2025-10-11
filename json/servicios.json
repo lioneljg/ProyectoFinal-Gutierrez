@@ -39,19 +39,19 @@
   "barberos": [
     {
       "id": "carlos",
-      "nombre": "Carlos Mendoza",
+      "nombre": "Carlos Fernández",
       "especialidad": "Cortes clásicos",
       "experiencia": "10 años"
     },
     {
       "id": "miguel",
-      "nombre": "Miguel Rodriguez",
+      "nombre": "Matías González",
       "especialidad": "Cortes modernos",
       "experiencia": "8 años"
     },
     {
       "id": "antonio",
-      "nombre": "Antonio Silva",
+      "nombre": "Facundo López",
       "especialidad": "Barbería tradicional",
       "experiencia": "15 años"
     }
